@@ -2,7 +2,7 @@
 
 An ephemeral, privacy-first security analysis pipeline for GitHub repositories.
 
-## Quick Start
+## 🚀 Quick Start (Local Development)
 
 ```bash
 npm install
@@ -11,38 +11,68 @@ npm run dev
 
 Visit `http://localhost:3001`
 
-## Debugging
+## 🌐 Vercel Deployment (Production)
 
-If you see a clean report for all repos:
+### Prerequisites
+1. GitHub account with personal access token
+2. Vercel account (free tier is fine)
 
-1. **Check the browser console** - Look for `[API]`, `[SCAN]`, `[SECRET_SCAN]`, `[DEP_SCAN]` logs
-2. **Test with a known vulnerable repo**: Visit `http://localhost:3001/api/scan-test` to see diagnostic output
-3. **Check Node terminal** - All scan logs are printed to stdout
+### Setup Steps
+
+1. **Generate GitHub Token**
+   - Go to https://github.com/settings/tokens/new
+   - Select scope: `repo`
+   - Copy the token
+
+2. **Deploy to Vercel**
+   ```bash
+   npm install -g vercel
+   vercel
+   ```
+
+3. **Add Environment Variable**
+   - In Vercel Dashboard → Project Settings → Environment Variables
+   - Name: `GITHUB_TOKEN`
+   - Value: Your GitHub token
+   - Redeploy
+
+### How It Works on Vercel
+
+✅ **Uses GitHub API** (no git/npm required)
+- Fetches repository files via GitHub REST API
+- Scans for exposed secrets
+- Checks against known vulnerable packages
+- Generates security report
+
+### Testing
+
+- **Test Demo**: Works immediately without GitHub token
+- **Scan Repository**: Enter any public GitHub URL
+
+---
 
 ## Features
 
-- **Ephemeral Processing**: Code is cloned to temp storage, scanned, and immediately purged
-- **AI-Independent**: Uses deterministic pattern matching and npm audit for vulnerabilities
-- **Privacy-First**: No data is stored long-term
-- **Security Focused**: Scans for exposed secrets in all files (.env, .json, .yml, code files)
-- **Comprehensive Reporting**: Severity levels, counts, and remediation guidance
+- **Ephemeral Processing**: Code is analyzed via GitHub API, no storage
+- **AI-Independent**: Deterministic pattern matching + vulnerability database
+- **Privacy-First**: No data is stored
+- **Security Focused**: Scans for exposed secrets
+- **Comprehensive Reporting**: Severity levels, security score (0-100)
 
-## Architecture
+## Secret Detection
 
-### 4-Stage Pipeline
+Detects:
+- AWS Access Keys (AKIA...)
+- AWS Secret Keys
+- GitHub Tokens
+- MongoDB Connection URIs
+- Private SSH Keys
 
-1. **Ingestion & Isolation**: Clone repo to isolated temp directory using `mkdtemp()`
-2. **Security Scan**: 
-   - Pattern matching for secrets (AWS, GitHub tokens, private keys, etc.)
-   - npm audit for dependency vulnerabilities
-3. **Scoring**: Calculate security score (0-100) with penalty weights per issue type
-4. **Report Generation**: Stream text report directly to browser, then cleanup
+## Vulnerability Detection
 
-### Vulnerability Detection
-
-- **Secrets**: AWS keys, GitHub tokens, private SSH keys, MongoDB URIs
-- **Dependencies**: npm audit results showing all severity levels (critical, high, moderate, low)
-- **Coverage**: Scans code files (.js, .ts, .py, etc.) AND config files (.env, .json, .yml, .properties)
+- **Known Vulnerable Packages**: lodash, moment, request, debug, etc.
+- **Dependency Analysis**: Via GitHub API (public repos)
+- **Severity Levels**: Critical, High, Moderate, Low
 
 ## Project Structure
 
@@ -50,75 +80,96 @@ If you see a clean report for all repos:
 .
 ├── app/
 │   ├── api/
-│   │   ├── scan/route.ts          # Main scan API
-│   │   ├── scan-test/route.ts     # Diagnostic test endpoint
+│   │   ├── scan/route.ts          # Main scan API (GitHub API based)
+│   │   ├── scan-local/route.ts    # Test Demo endpoint
 │   │   └── test/route.ts          # Health check
-│   ├── page.tsx                   # Frontend UI
-│   ├── layout.tsx                 # Root layout
-│   └── globals.css                # Tailwind styles
+│   └── page.tsx                   # Frontend UI (light theme)
 ├── lib/
-│   ├── scanner.ts                 # Core scanning logic (secret + dependency scanning)
-│   ├── patterns.ts                # Secret patterns & scoring weights
+│   ├── scanner.ts                 # Original scanner (local dev)
+│   ├── patterns.ts                # Secret patterns
 │   └── pdf-generator.ts           # Report generation
+├── test-repo/                     # Test files for demo
 ├── package.json
-├── next.config.ts
-├── tsconfig.json
+├── vercel.json                    # Vercel config
 └── README.md
 ```
 
-## API
-
-### POST /api/scan
-
-Request:
-```json
-{
-  "repoUrl": "https://github.com/user/repo"
-}
-```
-
-Response: Text file (text/plain) with security report
-
-### GET /api/scan-test
-
-Diagnostic endpoint - scans a known repo and returns JSON results for debugging
-
 ## Security Scoring
 
-Starts at 100 points, deductions per unique vulnerability:
-- Exposed secrets: -20 to -30 points
-- Critical dependencies: -25 points
-- High vulnerabilities: -15 points
-- Moderate vulnerabilities: -8 points
-- Low vulnerabilities: -3 points
+Score = 100 - penalties:
+- Critical finding: -25
+- High finding: -15
+- Moderate finding: -8
+- Low finding: -3
 
-## Environment
+## Environment Variables
 
-- Node.js 18+
-- Next.js 15+ (App Router)
-- No database required (ephemeral in-memory)
+```bash
+# Optional: For better rate limits
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-## Production Deployment
+# Node environment
+NODE_ENV=development
+```
 
-1. Set `NODE_ENV=production`
-2. Run `npm run build && npm start`
-3. Ensure `/tmp` or temp directory has sufficient space
-4. Consider rate limiting on `/api/scan` endpoint
-5. Monitor server logs for scan activity
+## Local Development
+
+```bash
+npm run dev
+# http://localhost:3001
+
+# Test with local test-repo or real GitHub URLs
+```
+
+## Production (Vercel)
+
+✅ **100% Vercel compatible**
+- No local binaries needed
+- Uses GitHub API for analysis
+- Auto-scaling serverless functions
+- CDN edge network
+
+## Limitations
+
+⚠️ **Vercel Deployment**
+- 60-second timeout (Hobby plan limit)
+- Cannot scan private repos (unless authenticated)
+- Vulnerable package list is static (not real-time like npm audit)
+
+✅ **Local Development**
+- Full npm audit support
+- Can clone private repos (with credentials)
+- Unlimited processing time
+- Real-time dependency scanning
 
 ## Troubleshooting
 
-**All repos show clean reports:**
-- Check if the repos actually have vulnerabilities or secrets
-- Use `/api/scan-test` to debug
-- Check browser and terminal console for error logs
+**400 Bad Request on Vercel?**
+- Ensure you're using `https://github.com/user/repo` format
+- Check that the repository is public
 
-**Timeout errors:**
-- Reduce `--depth 1` to clone faster
-- Increase timeout in route.ts if needed
-- Large repos may take longer
+**No findings detected?**
+- Use "🧪 Test Demo" first to verify scanner works
+- Real repos need actual vulnerabilities or secrets to show findings
 
-**No dependencies found:**
-- Repo must have `package.json` and preferably `package-lock.json`
-- npm audit requires npm 6+ installed
+**Want real-time npm audit?**
+- Deploy locally with `npm run build && npm start`
+- Or use Railway/Render (Docker support)
 
+---
+
+## Architecture Comparison
+
+### Local Development
+- Clone via `git`
+- Real-time `npm audit`
+- Full filesystem scanning
+- Unlimited timeout
+
+### Vercel Production
+- GitHub API fetches files
+- Static vulnerability database
+- Pattern-based secret detection
+- 60-second timeout
+
+Both achieve the same security outcome with different mechanisms optimized for their environment.

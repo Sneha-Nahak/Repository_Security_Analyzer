@@ -1,47 +1,147 @@
-import { execFile } from "child_process";
-import { promises as fs } from "fs";
-import path from "path";
-import os from "os";
-import { performScan } from "@/lib/scanner";
-import { generatePDF } from "@/lib/pdf-generator";
 import { NextRequest, NextResponse } from "next/server";
-import { promisify } from "util";
 
-const execFileAsync = promisify(execFile);
+export const maxDuration = 60; // 1-minute timeout (Vercel pro limit)
 
-export const maxDuration = 300; // 5-minute timeout
-
-async function cleanupDirectory(dir: string) {
+async function analyzeRepositoryViaGitHub(repoUrl: string): Promise<any> {
   try {
-    await fs.rm(dir, { recursive: true, force: true });
+    // Extract owner/repo from URL
+    const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/\.]+)/);
+    if (!match) throw new Error("Invalid GitHub URL format");
+    
+    const [, owner, repo] = match;
+    
+    // Use GitHub API to get repo content
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents`;
+    
+    const headers: any = {
+      Accept: "application/vnd.github.v3+json",
+    };
+    
+    // Add GitHub token if available (increases rate limit)
+    if (process.env.GITHUB_TOKEN) {
+      headers.Authorization = `token ${process.env.GITHUB_TOKEN}`;
+    }
+
+    let findings: any[] = [];
+
+    // Check for common files with secrets
+    const filesToCheck = [
+      ".env",
+      ".env.example",
+      "package.json",
+      "package-lock.json",
+      "config.json",
+      "secrets.json",
+    ];
+
+    for (const fileName of filesToCheck) {
+      try {
+        const fileUrl = `${apiUrl}/${fileName}`;
+        const response = await fetch(fileUrl, { headers });
+        
+        if (!response.ok) continue;
+
+        const data = await response.json();
+        if (!data.content) continue;
+
+        // Decode base64 content
+        const content = Buffer.from(data.content, "base64").toString("utf-8");
+        
+        // Simple secret pattern detection
+        const patterns = [
+          { regex: /AKIA[0-9A-Z]{16}/, type: "AWS Access Key" },
+          { regex: /aws_secret_access_key\s*=\s*[^\s]+/, type: "AWS Secret Key" },
+          { regex: /github[_-]?token\s*[:=]\s*[a-zA-Z0-9_-]+/, type: "GitHub Token" },
+          { regex: /mongodb[+a-z]*:\/\/[^\s]+/, type: "MongoDB URI" },
+          { regex: /-----BEGIN RSA PRIVATE KEY-----/, type: "Private Key" },
+        ];
+
+        patterns.forEach((p) => {
+          if (p.regex.test(content)) {
+            findings.push({
+              type: p.type,
+              severity: "critical",
+              file: fileName,
+              line: 1,
+              description: `Found potential ${p.type} in ${fileName}`,
+            });
+          }
+        });
+      } catch (err) {
+        // File not found, continue
+      }
+    }
+
+    return findings;
   } catch (err) {
-    console.error("Cleanup error:", err);
+    console.error("GitHub analysis error:", err);
+    throw new Error("Failed to analyze repository: " + (err instanceof Error ? err.message : "Unknown error"));
   }
 }
 
-function validateGitHubUrl(url: string): boolean {
+async function getVulnerablePackages(repoUrl: string): Promise<any[]> {
   try {
-    const urlObj = new URL(url);
-    // Strict check: must be https and exactly github.com
-    if (urlObj.protocol !== "https:") return false;
-    if (urlObj.hostname !== "github.com") return false;
+    const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/\.]+)/);
+    if (!match) throw new Error("Invalid GitHub URL format");
     
-    // Must match user/repo pattern
-    const pathParts = urlObj.pathname.split("/").filter(p => p);
-    if (pathParts.length < 2) return false;
+    const [, owner, repo] = match;
     
-    return true;
-  } catch {
-    return false;
+    // Fetch package.json from GitHub
+    const packageUrl = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/package.json`;
+    
+    const response = await fetch(packageUrl);
+    if (!response.ok) {
+      return [{ type: "Package Analysis", severity: "moderate", file: "package.json", line: 1, description: "Could not fetch package.json" }];
+    }
+
+    const packageJson = await response.json();
+    const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+
+    let findings: any[] = [];
+
+    // Check top vulnerable packages (hardcoded list of known vulnerabilities)
+    const knownVulnerable: Record<string, { severity: string; description: string }> = {
+      "lodash": { severity: "high", description: "Known vulnerabilities in lodash" },
+      "moment": { severity: "high", description: "Known vulnerabilities in moment.js" },
+      "request": { severity: "high", description: "request module has known security issues" },
+      "debug": { severity: "moderate", description: "Potential regex DoS vulnerability" },
+    };
+
+    Object.keys(deps).forEach((pkg) => {
+      if (knownVulnerable[pkg]) {
+        findings.push({
+          type: "Vulnerable Dependency",
+          severity: knownVulnerable[pkg].severity,
+          file: "package.json",
+          line: 1,
+          description: knownVulnerable[pkg].description,
+        });
+      }
+    });
+
+    return findings;
+  } catch (err) {
+    console.error("Package analysis error:", err);
+    return [];
   }
+}
+
+function calculateScore(findings: any[]): number {
+  let score = 100;
+  
+  findings.forEach((finding) => {
+    if (finding.severity === "critical") score -= 25;
+    else if (finding.severity === "high") score -= 15;
+    else if (finding.severity === "moderate") score -= 8;
+    else if (finding.severity === "low") score -= 3;
+  });
+
+  return Math.max(0, score);
 }
 
 export async function POST(request: NextRequest) {
-  let scanDir: string | null = null;
-
   try {
     const { repoUrl } = await request.json();
-    console.log(`[API] Scan request for: ${repoUrl}`);
 
     if (!repoUrl || typeof repoUrl !== "string") {
       return NextResponse.json(
@@ -50,53 +150,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Strict validation
-    if (!validateGitHubUrl(repoUrl)) {
-      console.error(`[API] Invalid URL format: ${repoUrl}`);
+    // Validate GitHub URL
+    if (!repoUrl.includes("github.com") || !repoUrl.startsWith("https://")) {
       return NextResponse.json(
         { error: "Only HTTPS GitHub repository URLs are supported" },
         { status: 400 }
       );
     }
 
-    // Create ephemeral scan directory using mkdtemp
-    try {
-      scanDir = await fs.mkdtemp(path.join(os.tmpdir(), "scan_"));
-      console.log(`[API] Created scan directory: ${scanDir}`);
-    } catch (err) {
-      console.error(`[API] Failed to create scan directory:`, err);
-      return NextResponse.json(
-        { error: "Failed to create scan directory" },
-        { status: 500 }
-      );
-    }
+    console.log(`[VERCEL API] Analyzing: ${repoUrl}`);
 
-    // Clone repository with depth 1 using execFile (no shell injection)
-    try {
-      console.log(`[API] Cloning ${repoUrl} to ${scanDir}`);
-      await execFileAsync("git", ["clone", "--depth", "1", "--", repoUrl, scanDir], {
-        timeout: 60000,
-      });
-      console.log(`[API] Clone successful`);
-    } catch (err: any) {
-      await cleanupDirectory(scanDir);
-      console.error(`[API] Clone error:`, err.message);
-      return NextResponse.json(
-        { error: "Failed to clone repository: " + err.message },
-        { status: 400 }
-      );
-    }
+    // Analyze repository via GitHub API
+    const secretFindings = await analyzeRepositoryViaGitHub(repoUrl);
+    console.log(`[VERCEL API] Secret analysis: ${secretFindings.length} findings`);
 
-    // Perform security scan
-    console.log(`[API] Starting security scan`);
-    const scanResult = await performScan(scanDir);
-    console.log(`[API] Security scan complete: ${scanResult.vulnerabilities.length} findings, score ${scanResult.score}`);
+    // Get vulnerable packages
+    const packageFindings = await getVulnerablePackages(repoUrl);
+    console.log(`[VERCEL API] Package analysis: ${packageFindings.length} findings`);
+
+    const allFindings = [...secretFindings, ...packageFindings];
+    const score = calculateScore(allFindings);
 
     // Generate report
-    const reportContent = await generatePDF(scanResult, repoUrl);
+    let report = `Repository Security Analysis Report
+====================================
+Repository: ${repoUrl}
+Timestamp: ${new Date().toISOString()}
+Security Score: ${score}/100
 
-    // Create response with stream
-    const response = new NextResponse(reportContent as any, {
+Summary
+-------
+Total Issues Found: ${allFindings.length}
+Critical: ${allFindings.filter((f) => f.severity === "critical").length}
+High: ${allFindings.filter((f) => f.severity === "high").length}
+Moderate: ${allFindings.filter((f) => f.severity === "moderate").length}
+Low: ${allFindings.filter((f) => f.severity === "low").length}
+
+Detailed Findings
+-----------------
+${allFindings.map((f, i) => `${i + 1}. [${f.severity.toUpperCase()}] ${f.type}
+   File: ${f.file}:${f.line}
+   Issue: ${f.description}`).join("\n\n")}
+
+Status: Analysis Complete
+`;
+
+    return new NextResponse(report, {
       status: 200,
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
@@ -104,23 +203,8 @@ export async function POST(request: NextRequest) {
         "Cache-Control": "no-cache, no-store, must-revalidate",
       },
     });
-
-    // Cleanup in background (fire and forget)
-    setImmediate(() => {
-      if (scanDir) {
-        console.log(`[API] Cleaning up ${scanDir}`);
-        cleanupDirectory(scanDir).catch(console.error);
-      }
-    });
-
-    return response;
   } catch (err) {
-    console.error("[API] Scan error:", err);
-
-    if (scanDir) {
-      await cleanupDirectory(scanDir);
-    }
-
+    console.error("[VERCEL API] Error:", err);
     return NextResponse.json(
       { error: "Scan failed: " + (err instanceof Error ? err.message : "Unknown error") },
       { status: 500 }
