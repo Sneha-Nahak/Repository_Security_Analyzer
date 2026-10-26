@@ -1,0 +1,12 @@
+{
+  "database": {
+    "host": "db.example.com",
+    "user": "admin",
+    "password": "secret123456",
+    "connection_string": "mongodb+srv://admin:secret@cluster.mongodb.net/mydb"
+  },
+  "api": {
+    "stripe_key": "sk_live_51234567890abcdefghijklmn",
+    "aws_access_key": "AKIAIOSFODNN7EXAMPLE"
+  }
+}
