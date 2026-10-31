@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) for the landing page, then select **Get started** to open the scanner. The scanner is also available directly at [http://localhost:3000/scanner](http://localhost:3000/scanner).
 
 To create and run a production build locally:
 
@@ -65,7 +65,10 @@ Coverage indicates how much of the applicable scan completed. Treat a provisiona
 
 ## Routes and project layout
 
-- `app/(scanner)/page.tsx`: scanner UI and report downloads.
+- `/`: landing page with links to the scanner and overview.
+- `/scanner`: scanner UI and report downloads (`app/(scanner)/scanner/page.tsx`).
+- `/overview`: scanner documentation (`app/(docs)/overview/page.tsx`).
+- `app/(home)/page.tsx`: landing page content.
 - `app/api/scan/route.ts`: scan endpoint, request limits, pipeline orchestration, and report response.
 - `app/api/test/route.ts`: API health check.
 - `lib/github.ts`: GitHub URL validation and bounded archive download.

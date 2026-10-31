@@ -15,5 +15,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.7,
     },
+    {
+      url: `${siteUrl}/scanner`,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
   ];
 }

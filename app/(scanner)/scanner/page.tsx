@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import PDFViewer from "../components/PDFViewer";
+import PDFViewer from "../../components/PDFViewer";
 import type { Severity } from "@/lib/patterns";
 import type { Finding, ScanResult } from "@/lib/scanner";
 

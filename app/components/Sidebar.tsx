@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { FiChevronLeft, FiMenu, FiX, FiBook, FiSearch } from "react-icons/fi";
+import { FiChevronLeft, FiMenu, FiX, FiBook, FiSearch, FiHome } from "react-icons/fi";
 
 interface NavSection {
   title: string;
@@ -31,8 +31,9 @@ export default function Sidebar() {
   }, [isMobileMenuOpen]);
 
   const sections: NavSection[] = [
+    { title: "Home", icon: <FiHome size={20} />, href: "/" },
     { title: "Overview", icon: <FiBook size={20} />, href: "/overview" },
-    { title: "Scanner", icon: <FiSearch size={20} />, href: "/" },
+    { title: "Scanner", icon: <FiSearch size={20} />, href: "/scanner" },
   ];
 
   return (
@@ -49,7 +50,6 @@ export default function Sidebar() {
             )}
           </div>
           <button
-            ref={mobileMenuToggleRef}
             type="button"
             onClick={() => setIsOpen(!isOpen)}
             className="sidebar-toggle desktop-sidebar-toggle"
@@ -61,6 +61,7 @@ export default function Sidebar() {
             {isOpen ? <FiChevronLeft size={19} /> : <FiMenu size={19} />}
           </button>
           <button
+            ref={mobileMenuToggleRef}
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="mobile-menu-toggle"

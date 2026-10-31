@@ -4,7 +4,7 @@ import Sidebar from "../components/Sidebar";
 import { siteUrl } from "../../lib/site-url";
 
 export const metadata: Metadata = {
-  alternates: siteUrl ? { canonical: siteUrl } : undefined,
+  alternates: siteUrl ? { canonical: `${siteUrl}/scanner` } : undefined,
   title: "GitHub Repository Security Scanner",
   description:
     "Analyze a public GitHub repository for exposed secrets and known dependency vulnerabilities. Review security findings and export PDF or AI-ready reports.",

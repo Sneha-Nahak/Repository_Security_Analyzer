@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) and select **Get started**, or go directly to [http://localhost:3000/scanner](http://localhost:3000/scanner).
 
 ## Scan a repository
 
