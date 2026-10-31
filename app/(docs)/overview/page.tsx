@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { 
   FiBook, FiAlertTriangle, FiPackage, FiKey, FiCodepen,
   FiAward, FiTag, FiZap, FiServer, FiArrowRight, FiCheckCircle,
@@ -13,21 +13,65 @@ interface TOCItem {
   level: number;
 }
 
+const toc: TOCItem[] = [
+  { id: "intro", label: "Introduction", level: 0 },
+  { id: "scoring", label: "Security Scoring System", level: 0 },
+  { id: "severity-levels", label: "Severity Levels", level: 1 },
+  { id: "grade-mapping", label: "Grade Mapping", level: 1 },
+  { id: "tags", label: "Understanding Tags & Categories", level: 0 },
+  { id: "bug-types", label: "Types of Bugs Detected", level: 0 },
+  { id: "secret-types", label: "Secret Detection", level: 1 },
+  { id: "dependency-types", label: "Dependency Vulnerabilities", level: 1 },
+  { id: "how-it-works", label: "How the Scanner Works", level: 0 },
+  { id: "usage", label: "Getting Started", level: 0 },
+];
+
 export default function OverviewPage() {
   const [activeSection, setActiveSection] = useState("intro");
 
-  const toc: TOCItem[] = [
-    { id: "intro", label: "Introduction", level: 0 },
-    { id: "scoring", label: "Security Scoring System", level: 0 },
-    { id: "severity-levels", label: "Severity Levels", level: 1 },
-    { id: "grade-mapping", label: "Grade Mapping", level: 1 },
-    { id: "tags", label: "Understanding Tags & Categories", level: 0 },
-    { id: "bug-types", label: "Types of Bugs Detected", level: 0 },
-    { id: "secret-types", label: "Secret Detection", level: 1 },
-    { id: "dependency-types", label: "Dependency Vulnerabilities", level: 1 },
-    { id: "how-it-works", label: "How the Scanner Works", level: 0 },
-    { id: "usage", label: "Getting Started", level: 0 },
-  ];
+  useEffect(() => {
+    const sectionIds = toc.map((item) => item.id);
+    let frameId = 0;
+
+    const updateActiveSection = () => {
+      const activationLine = Math.min(Math.max(window.innerHeight * 0.22, 96), window.innerHeight - 1);
+      let currentSection = sectionIds[0];
+
+      for (const id of sectionIds) {
+        const section = document.getElementById(id);
+        if (section && section.getBoundingClientRect().top <= activationLine) {
+          currentSection = id;
+        }
+      }
+
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (maxScroll > 0 && window.scrollY >= maxScroll - 2) {
+        currentSection = sectionIds[sectionIds.length - 1];
+      }
+
+      setActiveSection((active) => active === currentSection ? active : currentSection);
+    };
+
+    const scheduleUpdate = () => {
+      if (frameId !== 0) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        updateActiveSection();
+      });
+    };
+
+    updateActiveSection();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("hashchange", scheduleUpdate);
+
+    return () => {
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("hashchange", scheduleUpdate);
+      if (frameId !== 0) window.cancelAnimationFrame(frameId);
+    };
+  }, []);
 
   return (
     <div className="overview-page">
