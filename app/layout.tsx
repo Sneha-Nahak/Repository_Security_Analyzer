@@ -1,19 +1,23 @@
-import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import Header from "./components/Header";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "AI-Ready Security Scanner",
-  description: "Ephemeral SAST security analysis pipeline",
+export const metadata = {
+  title: "Ephemeral Security Scanner",
+  description: "AI-ready security scanning for your repositories",
 };
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <html lang="en">
-      <body className="bg-slate-950 text-white">{children}</body>
+      <body className="bg-white text-gray-900">
+        <Header />
+        {children}
+      </body>
     </html>
   );
 }

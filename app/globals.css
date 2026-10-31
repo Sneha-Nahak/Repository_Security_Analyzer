@@ -8,6 +8,34 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* Primary Brand Colors */
+  --color-primary: #1E3A8A;
+  --color-action: #4F7FEC;
+  --color-navy: #1F2937;
+  --color-slate: #6F7B8D;
+  
+  /* Text Colors */
+  --color-text-primary: #5F6B7C;
+  --color-text-secondary: #9CA3AF;
+  
+  /* Background Colors */
+  --color-bg-page: #F8F9FF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-input: #F9F9FB;
+  
+  /* Border Colors */
+  --color-border: #E5E7EB;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
 }
