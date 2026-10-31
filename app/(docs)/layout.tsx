@@ -3,17 +3,11 @@
 import type { ReactNode } from "react";
 import Sidebar from "../components/Sidebar";
 
-export default function DocsLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function DocsLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen">
+    <div className="app-shell">
       <Sidebar />
-      <div className="flex-1 transition-all duration-300 lg:ml-0 ml-20">
-        {children}
-      </div>
+      <div className="app-content">{children}</div>
     </div>
   );
 }

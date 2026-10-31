@@ -54,6 +54,7 @@ export function convertReportToHTML(report: string, result: ScanResult): string 
     }
     
     .page {
+      width: 100%;
       max-width: 900px;
       margin: 0 auto;
       background: white;
@@ -129,7 +130,8 @@ export function convertReportToHTML(report: string, result: ScanResult): string 
     }
     
     .severity-bar {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 15px;
       margin: 15px 0;
     }
@@ -228,28 +230,34 @@ export function convertReportToHTML(report: string, result: ScanResult): string 
     }
     
     .finding-title {
-      font-weight: 700;
-      margin-bottom: 8px;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-weight: 700;
     }
     
     .finding-detail {
-      font-size: 12px;
-      margin: 4px 0;
       display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin: 4px 0;
+      font-size: 12px;
     }
     
     .finding-detail-label {
-      font-weight: 600;
+      flex: 0 0 80px;
       min-width: 80px;
       color: #4b5563;
+      font-weight: 600;
     }
     
     .finding-detail-value {
+      min-width: 0;
       color: #1f2937;
-      word-break: break-all;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     
     .empty-state {
@@ -299,6 +307,27 @@ export function convertReportToHTML(report: string, result: ScanResult): string 
       color: #6b7280;
     }
     
+    @media (max-width: 760px) {
+      body { padding: 20px 16px; }
+      .header { margin-bottom: 24px; }
+      .header h1 { font-size: 24px; }
+      .section { margin-bottom: 24px; }
+      .overview { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .overview-card { padding: 12px 10px; }
+      .overview-card .value { font-size: 22px; }
+      .severity-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .finding { padding: 12px; }
+      .code { max-width: 100%; overflow-wrap: anywhere; }
+    }
+
+    @media (max-width: 420px) {
+      body { padding: 16px 12px; }
+      .header h1 { font-size: 22px; }
+      .section-title { font-size: 15px; }
+      .severity-bar { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+      .finding-detail { flex-direction: column; gap: 2px; }
+      .finding-detail-label { flex: 0 0 auto; min-width: 0; }
+    }
     @media print {
       body {
         padding: 0;
@@ -307,13 +336,47 @@ export function convertReportToHTML(report: string, result: ScanResult): string 
         page-break-after: always;
       }
     }
+    body, .page { background: #0A0E17 !important; color: #D6DFEA !important; }
+    .header { border-bottom-color: #3B82F6 !important; }
+    .header h1, .section-title, .finding-title, th { color: #E6EDF7 !important; }
+    .header p, .overview-card .label, .footer { color: #9AA8BA !important; }
+    .overview-card { background: #1E2533 !important; border-color: #303A4B !important; }
+    .score-badge { background: #3B82F6 !important; color: #fff !important; }
+    .bar { background: #303A4B !important; }
+    .bar-label { color: #D6DFEA !important; }
+    .severity-bar .bar-item:nth-child(1) .bar-label,
+    .severity-bar .bar-item:nth-child(1) .bar-fill { color: #E11D48 !important; }
+    .severity-bar .bar-item:nth-child(2) .bar-label,
+    .severity-bar .bar-item:nth-child(2) .bar-fill { color: #FB7185 !important; }
+    .severity-bar .bar-item:nth-child(3) .bar-label,
+    .severity-bar .bar-item:nth-child(3) .bar-fill { color: #FBBF24 !important; }
+    .severity-bar .bar-item:nth-child(4) .bar-label,
+    .severity-bar .bar-item:nth-child(4) .bar-fill { color: #3B82F6 !important; }
+    th { background: #1E2533 !important; border-color: #303A4B !important; }
+    td { color: #D6DFEA !important; border-color: #303A4B !important; }
+    .finding { background: #1E2533 !important; border-left-color: #46546B !important; }
+    .finding.critical { background: rgba(225,29,72,.15) !important; border-left-color: #E11D48 !important; }
+    .finding.high { background: rgba(225,29,72,.10) !important; border-left-color: #FB7185 !important; }
+    .finding.medium, .finding.moderate { background: rgba(251,191,36,.11) !important; border-left-color: #FBBF24 !important; }
+    .finding.low { background: rgba(59,130,246,.12) !important; border-left-color: #3B82F6 !important; }
+    .severity-badge { color: #0A0E17 !important; }
+    .finding.critical .severity-badge { background: #E11D48 !important; color: #fff !important; }
+    .finding.high .severity-badge { background: #FB7185 !important; color: #0A0E17 !important; }
+    .finding.medium .severity-badge, .finding.moderate .severity-badge { background: #FBBF24 !important; color: #0A0E17 !important; }
+    .finding.low .severity-badge { background: #3B82F6 !important; color: #fff !important; }
+    .finding-detail-label { color: #A8B5C8 !important; }
+    .finding-detail-value { color: #D6DFEA !important; }
+    .empty-state { background: rgba(16,185,129,.11) !important; border-color: rgba(16,185,129,.3) !important; color: #6EE7B7 !important; }
+    .remediation-steps { background: rgba(59,130,246,.11) !important; border-color: rgba(59,130,246,.3) !important; color: #D6DFEA !important; }
+    .code { background: #0A0E17 !important; color: #D6DFEA !important; }
+    .footer { border-top-color: #303A4B !important; }
   </style>
 </head>
 <body>
   <div class="page">
     <!-- Header -->
     <div class="header">
-      <h1>🛡️ Security Scan Report</h1>
+      <h1>Security Scan Report</h1>
       <p>Generated on ${new Date().toLocaleString()}</p>
     </div>
     
@@ -387,9 +450,9 @@ export function convertReportToHTML(report: string, result: ScanResult): string 
     
     <!-- Secrets Section -->
     <div class="section">
-      <div class="section-title">🔑 Exposed Secrets (${secrets.length})</div>
+      <div class="section-title">Exposed Secrets (${secrets.length})</div>
       ${secrets.length === 0
-        ? '<div class="empty-state">✓ No secrets detected in your repository</div>'
+        ? '<div class="empty-state">No exposed secrets were detected.</div>'
         : secrets
             .slice(0, 50)
             .map(
@@ -418,9 +481,9 @@ export function convertReportToHTML(report: string, result: ScanResult): string 
     
     <!-- Dependencies Section -->
     <div class="section">
-      <div class="section-title">📦 Vulnerable Dependencies (${deps.length})</div>
+      <div class="section-title">Vulnerable Dependencies (${deps.length})</div>
       ${deps.length === 0
-        ? '<div class="empty-state">✓ No known vulnerabilities in checked dependencies</div>'
+        ? '<div class="empty-state">No known vulnerabilities were found in the checked dependencies.</div>'
         : deps
             .slice(0, 50)
             .map(

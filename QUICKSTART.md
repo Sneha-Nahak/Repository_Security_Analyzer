@@ -1,84 +1,39 @@
-# Quick Start Guide
+# Quick Start
 
-## Running the Development Server
+## Requirements
+
+- Node.js
+- npm
+
+The scanner uses GitHub's archive endpoint, so Git does not need to be installed locally. A GitHub token is not required for public repositories.
+
+## Install and run
+
+From the project root:
 
 ```bash
+npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000).
 
-## Using the Scanner
+## Scan a repository
 
-1. **Enter Repository URL**: Paste a GitHub repository URL (e.g., `https://github.com/username/repo`)
-2. **Start Scan**: Click the "Start Scan" button
-3. **Pipeline Status**: Watch the progress through stages:
-   - Cloning project
-   - Executing security algorithms
-   - Compiling report
-4. **Download Report**: PDF automatically downloads when complete
+1. Open the scanner page.
+2. Enter a public repository URL, for example `https://github.com/owner/repo`.
+3. Click **Scan Repository**. To try the configured sample repository, click **Test Demo**.
+4. Review the scan status, score, coverage, findings, and any notes about checks that could not be completed.
+5. Download the text or AI-friendly report, or open the HTML report preview and download a PDF.
 
-## What Gets Scanned
+The scanner fetches the current default-branch archive and analyzes it in memory. It checks selected source/configuration files for secret patterns and supported dependency manifests or lockfiles for known advisories. npm packages are checked against the npm advisory registry; other supported ecosystems use OSV.
 
-### Secret Detection
-- AWS access keys and secrets
-- Stripe API keys (live and test)
-- GitHub tokens
-- Private SSH/RSA keys
-- MongoDB connection strings
-- Generic API keys
+## What to expect
 
-### Dependency Vulnerabilities
-- Runs `npm audit` on package.json
-- Reports critical and high severity issues
+- The scan covers the latest snapshot only; it does not inspect Git history.
+- Only public GitHub repositories are supported.
+- Dependency files without pinned versions and unsupported formats cannot receive a complete vulnerability check. The report explains incomplete coverage.
+- Scan requests are limited to 50 MB compressed and 400 MB unpacked. Up to 40 MB of selected text is retained for scanning. Selected source and configuration files are limited to 1 MB each; dependency files, including lockfiles, are limited to 25 MB each.
+- The application does not persist repository contents or scan results. It does contact GitHub and advisory services (npm or OSV) during a scan.
 
-### Scoring System
-- Starts at 100 points
-- Deductions for each finding:
-  - Exposed secrets: -20 to -30
-  - Critical dependency: -25
-  - High vulnerability: -15
-  - Medium vulnerability: -8
-
-## Privacy
-
-- **Ephemeral**: Code is stored only in temporary OS memory during scan
-- **Auto-cleanup**: Everything is deleted immediately after report generation
-- **No logging**: Scan results are not saved or analyzed
-
-## Production Deployment
-
-```bash
-npm run build
-npm start
-```
-
-The application runs on port 3000 by default.
-
-## Troubleshooting
-
-### "Failed to clone repository"
-- Ensure the GitHub URL is public and accessible
-- Verify the repository exists
-
-### "Scan failed"
-- Check available disk space for temp files
-- Ensure git is installed and available in PATH
-
-## Architecture Overview
-
-```
-User Input
-    ↓
-GitHub Clone (ephemeral /tmp)
-    ↓
-Secret Pattern Matching + npm audit
-    ↓
-Security Score Calculation
-    ↓
-PDF Generation
-    ↓
-Stream to Browser
-    ↓
-Auto Cleanup
-```
+For implementation details and the full list of checks, see [README.md](README.md).

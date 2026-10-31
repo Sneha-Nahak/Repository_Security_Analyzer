@@ -25,7 +25,7 @@ interface ScanResponse {
 }
 
 /** Public repo used by the "Test Demo" button. Change it to any public repo. */
-const DEMO_REPO = "https://github.com/Sneha-Nahak/soulartistics_website";
+const DEMO_REPO = "https://github.com/octocat/Hello-World";
 
 const SEVERITIES: Array<{ key: Severity; label: string; box: string; text: string; pill: string }> = [
   { key: "critical", label: "Critical", box: "bg-red-50 border-red-100", text: "text-red-600", pill: "bg-red-100 text-red-700" },
@@ -117,45 +117,91 @@ export default function Home() {
   const downloadPDF = async () => {
     if (!data) return;
     try {
-      // Dynamically import jspdf and html2canvas
       const { jsPDF } = await import("jspdf");
       const html2canvas = (await import("html2canvas")).default;
 
-      const container = document.createElement("div");
-      container.innerHTML = data.reportHTML;
-      container.style.position = "absolute";
-      container.style.left = "-9999px";
-      document.body.appendChild(container);
+      const renderedReport = await (async () => {
+        const renderFrame = document.createElement("iframe");
+        renderFrame.setAttribute("aria-hidden", "true");
+        renderFrame.title = "PDF rendering document";
+        renderFrame.style.cssText = "position:fixed;left:-10000px;top:0;width:900px;height:1200px;border:0;pointer-events:none;";
+        const frameReady = new Promise<void>((resolve, reject) => {
+          renderFrame.onload = () => resolve();
+          renderFrame.onerror = () => reject(new Error("Could not load the report for PDF rendering."));
+        });
+        renderFrame.srcdoc = data.reportHTML;
+        document.body.appendChild(renderFrame);
 
-      const canvas = await html2canvas(container, { useCORS: true, logging: false });
-      document.body.removeChild(container);
+        try {
+          await frameReady;
+          const reportDocument = renderFrame.contentDocument;
+          const reportPage = reportDocument?.querySelector<HTMLElement>(".page");
+          if (!reportDocument || !reportPage) {
+            throw new Error("The report content could not be prepared for PDF rendering.");
+          }
+          await reportDocument.fonts.ready;
+          const pageBounds = reportPage.getBoundingClientRect();
+          const pageWidth = pageBounds.width;
+          const cssBreakPoints = Array.from(reportPage.querySelectorAll<HTMLElement>(".header, .overview, .severity-bar, .finding, .empty-state, .footer"))
+            .map((element) => element.getBoundingClientRect().bottom - pageBounds.top)
+            .sort((a, b) => a - b);
+          const canvas = await html2canvas(reportPage, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#0A0E17",
+            windowWidth: 900,
+            windowHeight: 1200,
+          });
+          const scale = canvas.width / pageWidth;
+          return {
+            canvas,
+            safeBreakPoints: cssBreakPoints.map((point) => Math.round(point * scale)),
+          };
+        } finally {
+          renderFrame.remove();
+        }
+      })();
 
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
+      const { canvas, safeBreakPoints } = renderedReport;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 10;
+      const contentWidth = pageWidth - margin * 2;
+      const contentHeight = pageHeight - margin * 2;
+      const pixelsPerMm = canvas.width / contentWidth;
+      const maxSliceHeight = Math.floor(contentHeight * pixelsPerMm);
 
-      const imgData = canvas.toDataURL("image/png");
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      let heightLeft = canvas.height * imgWidth / canvas.width;
-      let position = 0;
+      let startY = 0;
+      let pageNumber = 0;
+      while (startY < canvas.height) {
+        const maxEndY = Math.min(startY + maxSliceHeight, canvas.height);
+        let endY = maxEndY;
+        if (maxEndY < canvas.height) {
+          const minEndY = startY + Math.floor(maxSliceHeight * 0.58);
+          const possibleBreaks = safeBreakPoints.filter((point) => point >= minEndY && point <= maxEndY);
+          if (possibleBreaks.length > 0) endY = possibleBreaks[possibleBreaks.length - 1];
+        }
 
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, heightLeft);
-      heightLeft -= pageHeight;
+        const sliceHeight = endY - startY;
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+        const context = pageCanvas.getContext("2d");
+        if (!context) throw new Error("Could not prepare a PDF page.");
+        context.drawImage(canvas, 0, startY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
 
-      while (heightLeft >= 0) {
-        position = heightLeft - canvas.height * imgWidth / canvas.width;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, heightLeft);
-        heightLeft -= pageHeight;
+        if (pageNumber > 0) pdf.addPage();
+        pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", margin, margin, contentWidth, sliceHeight / pixelsPerMm);
+        startY = endY;
+        pageNumber += 1;
       }
 
-      pdf.save(`security-report-${data.repo.replace("https://github.com/", "").replace("/", "-")}.pdf`);
-      addLogs(["📥 PDF report downloaded", "success"]);
+      pdf.save("security-report-" + data.repo.replace("https://github.com/", "").replace("/", "-") + ".pdf");
+      addLogs(["PDF report downloaded", "success"]);
     } catch (err) {
-      addLogs(["❌ Failed to generate PDF", "error"]);
+      addLogs(["Failed to generate PDF", "error"]);
       console.error("PDF generation failed:", err);
     }
   };
@@ -220,14 +266,22 @@ export default function Home() {
   };
 
   return (
-    <div style={{ backgroundColor: "var(--color-bg-page)", minHeight: "100vh" }}>
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+    <div className="scanner-page">
+      <main className="dashboard-main">
+        <div className="dashboard-intro">
+          <div className="dashboard-intro-copy">
+            <p className="dashboard-eyebrow">REPOSITORY SECURITY</p>
+            <h1>Security, in one clear view.</h1>
+            <p>Scan a public GitHub repository for exposed credentials and vulnerable dependencies.</p>
+          </div>
+          <div className="workspace-status"><span className="workspace-status-dot" />On-demand analysis</div>
+        </div>
+        <div className={"dashboard-grid " + (hasResult ? "has-results" : "")}>
           {/* New scan + score + summary */}
-          <section className={`min-w-0 rounded-2xl bg-white p-5 shadow-lg sm:p-8 ${hasResult ? "lg:row-span-2" : ""}`} style={{ border: "1px solid var(--color-border)" }}>
-            <h2 className="mb-6 text-lg font-bold uppercase tracking-wider" style={{ color: "var(--color-navy)" }}>New Scan</h2>
+          <section className={"dashboard-panel scan-panel " + (hasResult ? "has-result" : "")}>
+            <h2 className="panel-title">New scan</h2>
 
-            <form onSubmit={onSubmit} className="space-y-4">
+            <form onSubmit={onSubmit}>
               <div>
                 <label htmlFor="repo-url" className="mb-2 block text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--color-navy)" }}>
                   Repository URL
@@ -244,7 +298,7 @@ export default function Home() {
                     if (state === "error") { setState("idle"); setError(""); }
                   }}
                   disabled={busy}
-                  className="w-full rounded-lg border-2 px-4 py-3 text-sm transition focus:outline-none disabled:opacity-50"
+                  className="repo-input w-full px-4 py-3 disabled:opacity-50"
                   style={{
                     borderColor: "var(--color-border)",
                     color: "var(--color-text-primary)",
@@ -255,7 +309,7 @@ export default function Home() {
                 />
               </div>
 
-              <button type="submit" disabled={busy} className="w-full rounded-lg px-4 py-3 font-bold text-white transition" style={{ backgroundColor: "var(--color-action)" }}>
+              <button type="submit" disabled={busy} className="button-primary w-full px-4 py-3 font-bold text-white">
                 {busy ? "Scanning…" : "Scan Repository"}
               </button>
 
@@ -263,16 +317,21 @@ export default function Home() {
                 type="button"
                 onClick={() => void runScan(DEMO_REPO)}
                 disabled={busy}
-                className="w-full rounded-lg border-2 bg-white px-4 py-3 font-semibold transition hover:bg-slate-50 disabled:opacity-50"
+                className="button-secondary w-full px-4 py-3 font-semibold disabled:opacity-50"
                 style={{ borderColor: "var(--color-border)", color: "var(--color-text-primary)" }}
               >
                 Test Demo
               </button>
 
               {hasResult && (
-                <button type="button" onClick={downloadReport} className="w-full rounded-lg px-4 py-3 font-semibold text-white transition" style={{ backgroundColor: "#16A34A" }}>
-                  📥 Download Report
-                </button>
+                <div className="report-download-actions">
+                  <button type="button" onClick={downloadAIReport} className="button-secondary w-full px-4 py-3 font-semibold">
+                    Download AI Prompt
+                  </button>
+                  <button type="button" onClick={downloadPDF} className="button-primary w-full px-4 py-3 font-semibold text-white">
+                    Download PDF Report
+                  </button>
+                </div>
               )}
             </form>
 
@@ -289,9 +348,9 @@ export default function Home() {
                   <span className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>Scanning repository...</span>
                 </div>
               )}
-              {hasResult && <p className="text-sm font-semibold" style={{ color: "#16A34A" }}>Scan completed</p>}
+              {hasResult && <p className="text-sm font-semibold" style={{ color: "#10B981" }}>Scan completed</p>}
               {state === "error" && error && (
-                <div role="alert" className="rounded border-l-4 border-red-500 p-4 text-sm text-red-700" style={{ backgroundColor: "#FEE2E2" }}>
+                <div role="alert" className="rounded border-l-4 border-red-500 p-4 text-sm text-red-700" style={{ backgroundColor: "#351823" }}>
                   <p className="mb-1 font-semibold">Error</p>
                   <p className="break-words text-xs">{error}</p>
                 </div>
@@ -316,11 +375,11 @@ export default function Home() {
                       {result.summary.cleanPackagesPct !== null && ` · ${result.summary.cleanPackagesPct}% of ${result.summary.packagesChecked} packages clean`}
                     </p>
                     {result.provisional && (
-                      <p className="mt-2 inline-block rounded px-2 py-0.5 text-xs font-semibold" style={{ backgroundColor: "#FEFCE8", color: "#854D0E" }}>
+                      <p className="mt-2 inline-block rounded px-2 py-0.5 text-xs font-semibold" style={{ backgroundColor: "#342B16", color: "#FBBF24" }}>
                         Provisional: some checks could not run
                       </p>
                     )}
-                    {result.capReason && <p className="mt-2 text-xs" style={{ color: "#EA580C" }}>Capped because {result.capReason}.</p>}
+                    {result.capReason && <p className="mt-2 text-xs" style={{ color: "#FBBF24" }}>Capped because {result.capReason}.</p>}
                   </div>
                 </div>
 
@@ -340,17 +399,17 @@ export default function Home() {
           </section>
 
           {/* Findings */}
-          <section className="min-w-0 rounded-2xl bg-white p-5 shadow-lg sm:p-8 lg:col-span-2" style={{ border: "1px solid var(--color-border)" }}>
-            <h2 className="mb-2 text-lg font-bold uppercase tracking-wider" style={{ color: "var(--color-navy)" }}>Security Findings</h2>
+          <section className="dashboard-panel findings-panel">
+            <div className="findings-head"><h2 className="panel-title">Security findings</h2></div>
             {data && findings.length > 0 && (
-              <p className="mb-6 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+              <p className="findings-count">
                 {data.findingsTotal} issue{data.findingsTotal === 1 ? "" : "s"} detected
                 {data.findingsTotal > findings.length && ` (showing ${findings.length})`}
               </p>
             )}
 
             {findings.length === 0 ? (
-              <div className="flex h-48 items-center justify-center text-center sm:h-64" style={{ color: "var(--color-text-secondary)" }}>
+              <div className="empty-state flex items-center justify-center text-center">
                 <p>
                   {hasResult ? (
                     "No issues found in what was checked."
@@ -363,11 +422,11 @@ export default function Home() {
                 </p>
               </div>
             ) : (
-              <ul className="max-h-96 space-y-4 overflow-y-auto pr-1">
+              <ul className="finding-list space-y-3 overflow-y-auto">
                 {findings.map((f, i) => {
                   const style = SEVERITIES.find((s) => s.key === f.severity)!;
                   return (
-                    <li key={i} className="pb-4 last:border-b-0" style={{ borderBottom: `1px solid var(--color-border)` }}>
+                    <li key={i} className="finding-card">
                       <div className="flex flex-col-reverse items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
                         <div className="min-w-0">
                           <h3 className="break-words font-semibold" style={{ color: "var(--color-navy)" }}>{findingTitle(f)}</h3>
@@ -389,11 +448,11 @@ export default function Home() {
           </section>
 
           {/* Activity log: full width until a result exists, then under the findings */}
-          <section className={`min-w-0 rounded-2xl p-5 shadow-lg sm:p-8 ${hasResult ? "lg:col-span-2" : "lg:col-span-3"}`} style={{ backgroundColor: "var(--color-primary)", border: "1px solid var(--color-border)" }}>
+          <section className={"dashboard-panel activity-panel " + (hasResult ? "has-result" : "")}>
             <h2 className="mb-2 text-xl font-bold" style={{ color: "white" }}>Activity Log</h2>
             <p className="mb-6 text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>Real-time Scan Execution</p>
 
-            <div className="overflow-hidden rounded-lg">
+            <div className="activity-log-frame">
               <div className="flex items-center justify-between gap-2 border-b px-4 py-3 sm:px-6 sm:py-4" style={{ backgroundColor: "var(--color-bg-input)", borderColor: "var(--color-border)" }}>
                 <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--color-navy)" }}>Logs</p>
                 <div className="flex gap-2">
@@ -410,21 +469,12 @@ export default function Home() {
                       </button>
                       <button
                         type="button"
-                        onClick={downloadPDF}
+                        onClick={downloadReport}
                         className="hidden rounded px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 md:inline-block"
-                        style={{ backgroundColor: "#9333EA" }}
-                        title="Download PDF for manual review and fixing"
+                        style={{ backgroundColor: "#3B82F6" }}
+                        title="Download the human-readable text report"
                       >
-                        📥 PDF
-                      </button>
-                      <button
-                        type="button"
-                        onClick={downloadAIReport}
-                        className="hidden rounded px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 lg:inline-block"
-                        style={{ backgroundColor: "#6366F1" }}
-                        title="Download text format optimized for feeding to ChatGPT/Claude for automatic fixes"
-                      >
-                        📋 AI Prompt
+                        Text Report
                       </button>
                     </>
                   )}
@@ -461,20 +511,7 @@ export default function Home() {
                           <button
                             type="button"
                             onClick={() => {
-                              downloadPDF();
-                              setShowMoreMenu(false);
-                            }}
-                            className="block w-full px-4 py-2 text-left text-sm transition"
-                            style={{ color: "var(--color-text-primary)" }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--color-bg-input)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                          >
-                            📥 Download PDF
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              downloadAIReport();
+                              downloadReport();
                               setShowMoreMenu(false);
                             }}
                             className="block w-full px-4 py-2 text-left text-sm last:rounded-b-lg transition"
@@ -482,7 +519,7 @@ export default function Home() {
                             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--color-bg-input)")}
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                           >
-                            📋 AI Prompt
+                            Download Text Report
                           </button>
                         </div>
                       )}
@@ -494,7 +531,7 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-              <div ref={logBoxRef} className="h-64 space-y-2 overflow-y-auto p-4 font-mono text-sm sm:h-80 sm:space-y-1 sm:p-6" style={{ backgroundColor: "var(--color-bg-card)", color: "var(--color-text-primary)" }}>
+              <div ref={logBoxRef} className="activity-log-output h-64 space-y-2 overflow-y-auto p-4 font-mono text-sm sm:h-80 sm:space-y-1 sm:p-6" style={{ backgroundColor: "var(--color-bg-card)", color: "var(--color-text-primary)" }}>
                 {logs.length === 0 ? (
                   <p style={{ color: "var(--color-text-secondary)" }}>Logs will appear here...</p>
                 ) : (

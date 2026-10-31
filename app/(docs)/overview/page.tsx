@@ -30,9 +30,9 @@ export default function OverviewPage() {
   ];
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-bg-page)" }}>
+    <div className="overview-page">
       {/* Left Sidebar - Table of Contents (Internal to Overview - only on lg+) */}
-      <aside className="hidden w-64 bg-white p-6 lg:block" style={{ borderRight: "1px solid var(--color-border)" }}>
+      <aside className="overview-toc hidden w-64 bg-white p-6 lg:block">
         <h3 className="mb-4 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--color-text-secondary)" }}>
           Contents
         </h3>
@@ -47,7 +47,7 @@ export default function OverviewPage() {
               className="block w-full text-left rounded-md px-3 py-2 text-sm transition-all duration-200"
               style={{
                 paddingLeft: `${12 + item.level * 16}px`,
-                backgroundColor: activeSection === item.id ? "rgba(79, 127, 236, 0.08)" : "transparent",
+                backgroundColor: activeSection === item.id ? "rgba(59,130,246,.14)" : "transparent",
                 color: activeSection === item.id ? "var(--color-action)" : "var(--color-text-secondary)",
                 fontWeight: activeSection === item.id ? "600" : "400",
               }}
@@ -59,7 +59,7 @@ export default function OverviewPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 px-6 py-12 lg:px-16 max-w-5xl mx-auto">
+      <main className="overview-content flex-1 px-6 py-12 lg:px-16 mx-auto">
         {/* Introduction */}
         <section id="intro" className="mb-20 scroll-mt-20">
           <h1 className="mb-4 text-4xl font-bold" style={{ color: "var(--color-navy)" }}>
@@ -110,33 +110,33 @@ export default function OverviewPage() {
               {[
                 {
                   level: "Critical",
-                  color: "#DC2626",
-                  bgColor: "#FEE2E2",
-                  borderColor: "#FECACA",
+                  color: "#E11D48",
+                  bgColor: "#351823",
+                  borderColor: "#6B2037",
                   icon: FiAlertTriangle,
                   description: "Immediate action required. Exposed credentials or critical vulnerabilities that could be exploited immediately.",
                 },
                 {
                   level: "High",
-                  color: "#EA580C",
-                  bgColor: "#FFEDD5",
-                  borderColor: "#FED7AA",
+                  color: "#FBBF24",
+                  bgColor: "#342B16",
+                  borderColor: "#67531F",
                   icon: FiAlertTriangle,
                   description: "Serious security risk. Known vulnerabilities with high CVSS scores that could lead to system compromise.",
                 },
                 {
                   level: "Medium",
-                  color: "#CA8A04",
-                  bgColor: "#FEFCE8",
-                  borderColor: "#FEF3C7",
+                  color: "#FBBF24",
+                  bgColor: "#342B16",
+                  borderColor: "#67531F",
                   icon: FiAlertTriangle,
                   description: "Noteworthy vulnerabilities. Issues that may be exploited in specific conditions or combined with other vectors.",
                 },
                 {
                   level: "Low",
-                  color: "#2563EB",
-                  bgColor: "#EFF6FF",
-                  borderColor: "#DBEAFE",
+                  color: "#3B82F6",
+                  bgColor: "#17263B",
+                  borderColor: "#2A4C78",
                   icon: FiAlertTriangle,
                   description: "Minor issues. Vulnerabilities with limited impact or that require specific conditions to exploit.",
                 },
@@ -178,11 +178,11 @@ export default function OverviewPage() {
                 </thead>
                 <tbody>
                   {[
-                    { range: "90-100", grade: "A+", status: "Secure", meaning: "Excellent security posture", color: "#16A34A" },
+                    { range: "90-100", grade: "A+", status: "Secure", meaning: "Excellent security posture", color: "#10B981" },
                     { range: "75-89", grade: "A", status: "Good", meaning: "Generally secure with minor issues", color: "var(--color-action)" },
-                    { range: "60-74", grade: "B", status: "At Risk", meaning: "Moderate vulnerabilities present", color: "#EA580C" },
-                    { range: "40-59", grade: "C", status: "Critical", meaning: "Significant security concerns", color: "#DC2626" },
-                    { range: "0-39", grade: "F", status: "Failed", meaning: "Severe security issues", color: "#991B1B" },
+                    { range: "60-74", grade: "B", status: "At Risk", meaning: "Moderate vulnerabilities present", color: "#FBBF24" },
+                    { range: "40-59", grade: "C", status: "Critical", meaning: "Significant security concerns", color: "#E11D48" },
+                    { range: "0-39", grade: "F", status: "Failed", meaning: "Severe security issues", color: "#FDA4AF" },
                   ].map((row, idx) => (
                     <tr key={idx} style={{ borderBottom: "1px solid var(--color-border)" }}>
                       <td className="px-4 py-3 font-medium" style={{ color: "var(--color-text-primary)" }}>
@@ -244,15 +244,15 @@ export default function OverviewPage() {
             ))}
           </div>
 
-          <div className="rounded-lg p-6" style={{ backgroundColor: "#EFF6FF", border: "1.5px solid #DBEAFE" }}>
-            <h4 className="mb-3 font-semibold flex items-center gap-2" style={{ color: "#1E40AF" }}>
+          <div className="rounded-lg p-6" style={{ backgroundColor: "#17263B", border: "1.5px solid #2A4C78" }}>
+            <h4 className="mb-3 font-semibold flex items-center gap-2" style={{ color: "#93C5FD" }}>
               <FiBarChart size={18} />
               Coverage & Confidence
             </h4>
-            <p style={{ color: "#1E3A8A" }} className="text-sm mb-3">
+            <p style={{ color: "#BFDBFE" }} className="text-sm mb-3">
               Each report includes:
             </p>
-            <ul style={{ color: "#1E3A8A" }} className="space-y-2 text-sm">
+            <ul style={{ color: "#BFDBFE" }} className="space-y-2 text-sm">
               <li className="flex items-start gap-2">
                 <FiCheckCircle size={16} className="mt-0.5 flex-shrink-0" />
                 <span><strong>Coverage:</strong> Percentage of your codebase analyzed. 100% means all checks completed successfully.</span>
@@ -306,12 +306,12 @@ export default function OverviewPage() {
               ))}
             </div>
 
-            <div className="mt-6 rounded-lg p-4" style={{ backgroundColor: "#FEE2E2", border: "1.5px solid #FECACA" }}>
-              <h4 className="font-semibold mb-2 flex items-center gap-2" style={{ color: "#7F1D1D" }}>
+            <div className="mt-6 rounded-lg p-4" style={{ backgroundColor: "#351823", border: "1.5px solid #6B2037" }}>
+              <h4 className="font-semibold mb-2 flex items-center gap-2" style={{ color: "#FDA4AF" }}>
                 <FiAlertTriangle size={18} />
                 Immediate Action Required
               </h4>
-              <p style={{ color: "#7F1D1D" }} className="text-sm">
+              <p style={{ color: "#FDA4AF" }} className="text-sm">
                 If any secrets are detected, you must immediately rotate the exposed credentials. Attackers can use exposed secrets to compromise your systems.
               </p>
             </div>
@@ -356,15 +356,15 @@ export default function OverviewPage() {
               ))}
             </div>
 
-            <div className="mt-6 rounded-lg p-4" style={{ backgroundColor: "#EFF6FF", border: "1.5px solid #DBEAFE" }}>
-              <h4 className="font-semibold mb-2 flex items-center gap-2" style={{ color: "#1E40AF" }}>
+            <div className="mt-6 rounded-lg p-4" style={{ backgroundColor: "#17263B", border: "1.5px solid #2A4C78" }}>
+              <h4 className="font-semibold mb-2 flex items-center gap-2" style={{ color: "#93C5FD" }}>
                 <FiLayers size={18} />
                 Priority
               </h4>
-              <p style={{ color: "#1E3A8A" }} className="text-sm mb-3">
+              <p style={{ color: "#BFDBFE" }} className="text-sm mb-3">
                 <strong>Production dependencies</strong> are higher priority than dev-only dependencies.
               </p>
-              <p style={{ color: "#1E3A8A" }} className="text-sm">
+              <p style={{ color: "#BFDBFE" }} className="text-sm">
                 Focus on upgrading production vulnerabilities first, as they affect users of your application.
               </p>
             </div>
@@ -492,12 +492,12 @@ export default function OverviewPage() {
             ))}
           </div>
 
-          <div className="rounded-lg p-6" style={{ backgroundColor: "#F0FDF4", border: "1.5px solid #DCFCE7" }}>
-            <h3 className="font-semibold mb-3 flex items-center gap-2" style={{ color: "#15803D" }}>
+          <div className="rounded-lg p-6" style={{ backgroundColor: "#142D29", border: "1.5px solid #1E5A4C" }}>
+            <h3 className="font-semibold mb-3 flex items-center gap-2" style={{ color: "#6EE7B7" }}>
               <FiCheckCircle size={18} />
               Tips for Best Results
             </h3>
-            <ul style={{ color: "#15803D" }} className="space-y-2 text-sm">
+            <ul style={{ color: "#6EE7B7" }} className="space-y-2 text-sm">
               <li className="flex items-start gap-2">
                 <span className="mt-1">•</span>
                 <span><strong>Commit lockfiles:</strong> Ensure package-lock.json, requirements.txt, go.sum, etc. are committed for complete dependency scanning</span>

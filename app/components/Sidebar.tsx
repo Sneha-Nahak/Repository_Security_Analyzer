@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { FiChevronLeft, FiMenu, FiBook, FiSearch } from "react-icons/fi";
+import { FiChevronLeft, FiMenu, FiX, FiBook, FiSearch } from "react-icons/fi";
 
 interface NavSection {
   title: string;
@@ -14,6 +14,7 @@ interface NavSection {
 export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const sections: NavSection[] = [
     { title: "Overview", icon: <FiBook size={20} />, href: "/overview" },
@@ -22,89 +23,68 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Sidebar */}
-      <aside
-        className={`${
-          isOpen ? "w-64" : "w-20"
-        } fixed left-0 top-0 h-screen bg-white transition-all duration-300 lg:relative flex flex-col`}
-        style={{
-          borderRight: "1px solid var(--color-border)",
-          boxShadow: isOpen ? "0 1px 2px rgba(30, 58, 138, 0.05)" : "none",
-        }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b p-4" style={{ borderBottomColor: "var(--color-border)" }}>
-          {isOpen && (
-            <div className="flex items-center gap-3">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg font-bold text-white text-sm"
-                style={{ backgroundColor: "var(--color-action)" }}
-              >
-                E
+      <aside className={"app-sidebar " + (isOpen ? "is-open" : "is-collapsed")}>
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <span className="sidebar-brand-mark" aria-hidden="true">E</span>
+            {isOpen && (
+              <div className="sidebar-brand-copy">
+                <strong>Ephemeral</strong>
+                <span>Security Scanner</span>
               </div>
-              <div className="flex flex-col">
-                <h1 className="text-sm font-semibold" style={{ color: "var(--color-navy)" }}>
-                  Ephemeral
-                </h1>
-                <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
-                  Security Scanner
-                </p>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
           <button
+            type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="rounded-lg p-2 transition-colors hover:bg-slate-100"
+            className="sidebar-toggle desktop-sidebar-toggle"
             aria-label="Toggle sidebar"
-            style={{ color: "var(--color-text-secondary)" }}
+            aria-expanded={isOpen}
+            title={isOpen ? "Collapse navigation" : "Expand navigation"}
           >
-            {isOpen ? <FiChevronLeft size={20} /> : <FiMenu size={20} />}
+            {isOpen ? <FiChevronLeft size={19} /> : <FiMenu size={19} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="mobile-menu-toggle"
+            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="primary-navigation"
+          >
+            {isMobileMenuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="space-y-1 p-4">
+        <nav
+          id="primary-navigation"
+          className={"sidebar-nav " + (isMobileMenuOpen ? "is-mobile-open" : "")}
+          aria-label="Main navigation"
+        >
           {sections.map((section) => {
             const isActive = pathname === section.href || (pathname.startsWith("/overview") && section.href === "/overview");
             return (
               <Link
                 key={section.href}
                 href={section.href}
-                className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200"
-                style={{
-                  backgroundColor: isActive ? "rgba(79, 127, 236, 0.1)" : "transparent",
-                  color: isActive ? "var(--color-action)" : "var(--color-text-secondary)",
-                }}
+                className={"sidebar-link " + (isActive ? "is-active" : "")}
+                aria-current={isActive ? "page" : undefined}
+                title={!isOpen ? section.title : undefined}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
-                <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {section.icon}
-                </span>
-                {isOpen && <span>{section.title}</span>}
+                <span className="sidebar-icon" aria-hidden="true">{section.icon}</span>
+                <span className="sidebar-link-label">{section.title}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Spacer */}
-        <div className="flex-1" />
+        <div className="sidebar-spacer" />
 
-        {/* Footer */}
-        {isOpen && (
-          <div className="border-t p-4" style={{ borderTopColor: "var(--color-border)" }}>
-            <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
-              Security by design
-            </p>
-          </div>
-        )}
+        {isOpen && <div className="sidebar-footer">Security by design</div>}
       </aside>
 
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/10 lg:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {isOpen && <div className="sidebar-backdrop" onClick={() => setIsOpen(false)} aria-hidden="true" />}
     </>
   );
 }
