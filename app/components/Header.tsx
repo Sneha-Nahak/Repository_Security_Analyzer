@@ -5,7 +5,7 @@ export default function Header() {
         <span className="site-brand-mark" aria-hidden="true"><span /></span>
         <div className="site-brand-copy">
           <span className="site-brand-title">Repository Security Analyzer</span>
-          <p>On-demand repository security</p>
+          <p>Security insights for your code</p>
         </div>
       </div>
       <div className="site-header-status">

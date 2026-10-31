@@ -16,3 +16,6 @@ npm-debug.log
 *~
 .cache/
 /tmp/
+
+# TypeScript incremental compilation cache
+*.tsbuildinfo

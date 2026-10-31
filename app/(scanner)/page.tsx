@@ -267,12 +267,12 @@ export default function Home() {
 
   return (
     <div className="scanner-page">
-      <main className="dashboard-main">
+      <main id="main-content" className="dashboard-main" tabIndex={-1}>
         <div className="dashboard-intro">
           <div className="dashboard-intro-copy">
             <p className="dashboard-eyebrow">REPOSITORY SECURITY</p>
-            <h1>Security, in one clear view.</h1>
-            <p>Scan a public GitHub repository for exposed credentials and vulnerable dependencies.</p>
+            <h1>GitHub Repository Security Scanner</h1>
+            <p>Scan public GitHub repositories for exposed secrets and known dependency vulnerabilities with static analysis and clear security reports.</p>
           </div>
           <div className="workspace-status"><span className="workspace-status-dot" />On-demand analysis</div>
         </div>
@@ -290,6 +290,7 @@ export default function Home() {
                   id="repo-url"
                   type="url"
                   inputMode="url"
+                  aria-describedby={state === "error" && error ? "scan-error" : undefined}
                   autoComplete="off"
                   placeholder="https://github.com/user/repo"
                   value={repoUrl}
@@ -325,7 +326,7 @@ export default function Home() {
 
               {hasResult && (
                 <div className="report-download-actions">
-                  <button type="button" onClick={downloadAIReport} className="button-secondary w-full px-4 py-3 font-semibold">
+                  <button type="button" onClick={downloadAIReport} className="button-secondary button-ai-prompt w-full px-4 py-3 font-semibold">
                     Download AI Prompt
                   </button>
                   <button type="button" onClick={downloadPDF} className="button-primary w-full px-4 py-3 font-semibold text-white">
@@ -352,7 +353,7 @@ export default function Home() {
               {state === "error" && error && (
                 <div role="alert" className="rounded border-l-4 border-red-500 p-4 text-sm text-red-700" style={{ backgroundColor: "#351823" }}>
                   <p className="mb-1 font-semibold">Error</p>
-                  <p className="break-words text-xs">{error}</p>
+                  <p id="scan-error" className="break-words text-xs">{error}</p>
                 </div>
               )}
             </div>
@@ -366,8 +367,17 @@ export default function Home() {
                       <span className={`text-5xl font-bold ${tone.text}`}>{result.score}</span>
                       <span className="text-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>/ 100 · grade {result.grade}</span>
                     </div>
-                    <div className="mb-4 h-4 w-full overflow-hidden rounded-full" style={{ backgroundColor: "var(--color-border)" }}>
-                      <div className={`h-full transition-all ${tone.bar}`} style={{ width: `${result.score}%` }} />
+                    <div
+                      className="mb-4 h-4 w-full overflow-hidden rounded-full"
+                      role="progressbar"
+                      aria-label="Security score out of 100"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={result.score}
+                      aria-valuetext={`${result.score} out of 100, grade ${result.grade}`}
+                      style={{ backgroundColor: "var(--color-border)" }}
+                    >
+                      <div aria-hidden="true" className={`h-full transition-all ${tone.bar}`} style={{ width: `${result.score}%` }} />
                     </div>
                     <p className="text-xs font-semibold" style={{ color: "var(--color-text-secondary)" }}>{tone.label}</p>
                     <p className="mt-2 text-xs" style={{ color: "var(--color-text-secondary)" }}>
@@ -409,7 +419,7 @@ export default function Home() {
             )}
 
             {findings.length === 0 ? (
-              <div className="empty-state flex items-center justify-center text-center">
+              <div className="empty-state flex items-center justify-center text-center" role="status" aria-live="polite">
                 <p>
                   {hasResult ? (
                     "No issues found in what was checked."
@@ -452,7 +462,7 @@ export default function Home() {
             <h2 className="mb-2 text-xl font-bold" style={{ color: "white" }}>Activity Log</h2>
             <p className="mb-6 text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>Real-time Scan Execution</p>
 
-            <div className="activity-log-frame">
+            <div className="activity-log-frame" role="group" aria-label="Scan activity log">
               <div className="flex items-center justify-between gap-2 border-b px-4 py-3 sm:px-6 sm:py-4" style={{ backgroundColor: "var(--color-bg-input)", borderColor: "var(--color-border)" }}>
                 <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--color-navy)" }}>Logs</p>
                 <div className="flex gap-2">
@@ -489,12 +499,14 @@ export default function Home() {
                         style={{ borderColor: "var(--color-border)", color: "var(--color-text-primary)", backgroundColor: "var(--color-bg-card)" }}
                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--color-bg-input)")}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--color-bg-card)")}
-                        aria-label="More options"
+                        aria-expanded={showMoreMenu}
+                        aria-controls="report-more-options"
+                        aria-label="More report options"
                       >
                         ⋮
                       </button>
                       {showMoreMenu && (
-                        <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg z-10" style={{ border: "1px solid var(--color-border)", backgroundColor: "var(--color-bg-card)" }}>
+                        <div id="report-more-options" role="group" aria-label="Report actions" className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg z-10" style={{ border: "1px solid var(--color-border)", backgroundColor: "var(--color-bg-card)" }}>
                           <button
                             type="button"
                             onClick={() => {
@@ -526,12 +538,12 @@ export default function Home() {
                     </div>
                   )}
 
-                  <button type="button" onClick={() => setLogs([])} className="rounded border px-3 py-1.5 text-xs transition" style={{ borderColor: "var(--color-border)", color: "var(--color-text-primary)", backgroundColor: "var(--color-bg-card)" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--color-bg-input)")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--color-bg-card)")}>
+                  <button type="button" onClick={() => setLogs([])} aria-label="Clear activity log" className="rounded border px-3 py-1.5 text-xs transition" style={{ borderColor: "var(--color-border)", color: "var(--color-text-primary)", backgroundColor: "var(--color-bg-card)" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--color-bg-input)")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--color-bg-card)")}>
                     Clear
                   </button>
                 </div>
               </div>
-              <div ref={logBoxRef} className="activity-log-output h-64 space-y-2 overflow-y-auto p-4 font-mono text-sm sm:h-80 sm:space-y-1 sm:p-6" style={{ backgroundColor: "var(--color-bg-card)", color: "var(--color-text-primary)" }}>
+              <div ref={logBoxRef} role="log" aria-live="polite" aria-relevant="additions" aria-busy={busy} className="activity-log-output h-64 space-y-2 overflow-y-auto p-4 font-mono text-sm sm:h-80 sm:space-y-1 sm:p-6" style={{ backgroundColor: "var(--color-bg-card)", color: "var(--color-text-primary)" }}>
                 {logs.length === 0 ? (
                   <p style={{ color: "var(--color-text-secondary)" }}>Logs will appear here...</p>
                 ) : (

@@ -32,47 +32,49 @@ export default function OverviewPage() {
   return (
     <div className="overview-page">
       {/* Left Sidebar - Table of Contents (Internal to Overview - only on lg+) */}
-      <aside className="overview-toc hidden w-64 bg-white p-6 lg:block">
-        <h3 className="mb-4 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--color-text-secondary)" }}>
+      <aside className="overview-toc hidden w-64 bg-white p-6 lg:block" aria-label="On this page">
+        <p id="overview-toc-label" className="toc-heading mb-4 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--color-text-secondary)" }}>
           Contents
-        </h3>
-        <nav className="space-y-1">
+        </p>
+        <nav className="space-y-1" aria-labelledby="overview-toc-label">
           {toc.map((item) => (
-            <button
+            <a
               key={item.id}
+              href={`#${item.id}`}
               onClick={() => {
                 setActiveSection(item.id);
-                document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
               }}
               className="block w-full text-left rounded-md px-3 py-2 text-sm transition-all duration-200"
+              aria-current={activeSection === item.id ? "location" : undefined}
               style={{
                 paddingLeft: `${12 + item.level * 16}px`,
                 backgroundColor: activeSection === item.id ? "rgba(59,130,246,.14)" : "transparent",
                 color: activeSection === item.id ? "var(--color-action)" : "var(--color-text-secondary)",
                 fontWeight: activeSection === item.id ? "600" : "400",
+                textDecoration: "none",
               }}
             >
               {item.label}
-            </button>
+            </a>
           ))}
         </nav>
       </aside>
 
       {/* Main Content */}
-      <main className="overview-content flex-1 px-6 py-12 lg:px-16 mx-auto">
+      <main id="main-content" className="overview-content flex-1 px-6 py-12 lg:px-16 mx-auto" tabIndex={-1}>
         {/* Introduction */}
         <section id="intro" className="mb-20 scroll-mt-20">
           <h1 className="mb-4 text-4xl font-bold" style={{ color: "var(--color-navy)" }}>
-            Welcome to Ephemeral
+            How Ephemeral Scans GitHub Repositories
           </h1>
           <p className="text-lg mb-6" style={{ color: "var(--color-text-primary)" }}>
-            The <strong>Ephemeral AI-Ready Security Scanner</strong> is a comprehensive static analysis security testing (SAST) tool designed to identify vulnerabilities, exposed secrets, and outdated dependencies in your codebase.
+            The <strong>Ephemeral AI-Ready Security Scanner</strong> performs static analysis on public GitHub repositories to detect exposed secrets and known vulnerabilities in project dependencies. Review security findings, understand the score, and export AI-ready or PDF reports.
           </p>
           <div className="rounded-lg bg-white p-6 mb-6" style={{ border: "1px solid var(--color-border)" }}>
-            <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: "var(--color-navy)" }}>
+            <h2 className="overview-feature-heading font-semibold mb-4 flex items-center gap-2" style={{ color: "var(--color-navy)" }}>
               <FiShield size={20} style={{ color: "var(--color-action)" }} />
               Key Features
-            </h3>
+            </h2>
             <div className="space-y-3">
               {[
                 { icon: FiKey, text: "Detect exposed secrets and credentials" },
@@ -168,12 +170,13 @@ export default function OverviewPage() {
             </h3>
             <div className="overflow-x-auto rounded-lg" style={{ border: "1px solid var(--color-border)" }}>
               <table className="w-full text-left text-sm">
+                <caption className="sr-only">Security score ranges, grades, and their meanings</caption>
                 <thead>
                   <tr style={{ backgroundColor: "var(--color-bg-input)", borderBottom: "1px solid var(--color-border)" }}>
-                    <th className="px-4 py-3 font-semibold" style={{ color: "var(--color-navy)" }}>Score Range</th>
-                    <th className="px-4 py-3 font-semibold" style={{ color: "var(--color-navy)" }}>Grade</th>
-                    <th className="px-4 py-3 font-semibold" style={{ color: "var(--color-navy)" }}>Status</th>
-                    <th className="px-4 py-3 font-semibold" style={{ color: "var(--color-navy)" }}>Meaning</th>
+                    <th scope="col" className="px-4 py-3 font-semibold" style={{ color: "var(--color-navy)" }}>Score Range</th>
+                    <th scope="col" className="px-4 py-3 font-semibold" style={{ color: "var(--color-navy)" }}>Grade</th>
+                    <th scope="col" className="px-4 py-3 font-semibold" style={{ color: "var(--color-navy)" }}>Status</th>
+                    <th scope="col" className="px-4 py-3 font-semibold" style={{ color: "var(--color-navy)" }}>Meaning</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -185,9 +188,9 @@ export default function OverviewPage() {
                     { range: "0-39", grade: "F", status: "Failed", meaning: "Severe security issues", color: "#FDA4AF" },
                   ].map((row, idx) => (
                     <tr key={idx} style={{ borderBottom: "1px solid var(--color-border)" }}>
-                      <td className="px-4 py-3 font-medium" style={{ color: "var(--color-text-primary)" }}>
+                      <th scope="row" className="px-4 py-3 text-left font-medium" style={{ color: "var(--color-text-primary)" }}>
                         {row.range}
-                      </td>
+                      </th>
                       <td className="px-4 py-3 font-bold" style={{ color: row.color }}>
                         {row.grade}
                       </td>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FiChevronLeft, FiMenu, FiX, FiBook, FiSearch } from "react-icons/fi";
 
 interface NavSection {
@@ -15,6 +15,20 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuToggleRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setIsMobileMenuOpen(false);
+      mobileMenuToggleRef.current?.focus();
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [isMobileMenuOpen]);
 
   const sections: NavSection[] = [
     { title: "Overview", icon: <FiBook size={20} />, href: "/overview" },
@@ -23,7 +37,7 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className={"app-sidebar " + (isOpen ? "is-open" : "is-collapsed")}>
+      <aside className={"app-sidebar " + (isOpen ? "is-open" : "is-collapsed")} aria-label="Primary sidebar">
         <div className="sidebar-header">
           <div className="sidebar-brand">
             <span className="sidebar-brand-mark" aria-hidden="true">E</span>
@@ -35,11 +49,13 @@ export default function Sidebar() {
             )}
           </div>
           <button
+            ref={mobileMenuToggleRef}
             type="button"
             onClick={() => setIsOpen(!isOpen)}
             className="sidebar-toggle desktop-sidebar-toggle"
-            aria-label="Toggle sidebar"
+            aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
             aria-expanded={isOpen}
+            aria-controls="primary-navigation"
             title={isOpen ? "Collapse navigation" : "Expand navigation"}
           >
             {isOpen ? <FiChevronLeft size={19} /> : <FiMenu size={19} />}
@@ -68,6 +84,7 @@ export default function Sidebar() {
                 key={section.href}
                 href={section.href}
                 className={"sidebar-link " + (isActive ? "is-active" : "")}
+                aria-label={section.title}
                 aria-current={isActive ? "page" : undefined}
                 title={!isOpen ? section.title : undefined}
                 onClick={() => setIsMobileMenuOpen(false)}
