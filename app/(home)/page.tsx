@@ -140,6 +140,14 @@ export default function HomePage() {
           Open scanner <FiArrowRight aria-hidden="true" />
         </Link>
       </section>
+
+      <footer className="home-footer">
+        <p>Repository contents and scan results are processed in memory and aren&apos;t persisted by the app.</p>
+        <nav aria-label="Footer navigation">
+          <Link href="/overview">Overview</Link>
+          <Link href="/scanner">Scanner</Link>
+        </nav>
+      </footer>
     </main>
   );
 }

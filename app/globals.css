@@ -782,3 +782,22 @@ body {
   .home-feature-card { padding: 20px; }
   .home-bottom-cta { padding: 22px 19px; }
 }
+.home-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 30px;
+  padding: 18px 4px 0;
+  border-top: 1px solid #263244;
+  color: #8291A7;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.home-footer p { max-width: 760px; margin: 0; }
+.home-footer nav { display: flex; flex: 0 0 auto; gap: 18px; }
+.home-footer a { color: #A8B5C8; font-weight: 650; text-decoration: none; }
+.home-footer a:hover { color: #93C5FD; }
+@media (max-width: 560px) {
+  .home-footer { align-items: flex-start; flex-direction: column; gap: 10px; padding-top: 16px; }
+}
